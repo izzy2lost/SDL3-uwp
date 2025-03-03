@@ -14,8 +14,8 @@ jobs:
         steps:
           - uses: actions/checkout@v4
             with:
-                ref: df270da
-                submodules: true
+             ref: df270daa8d6d48426e128e50c73357dfdf89afbf
+             submodules: true
           - name: Configure
             run: cmake -DCMAKE_SYSTEM_NAME=${{ matrix.target }} -DCMAKE_SYSTEM_VERSION="10.0" -A${{ matrix.arch }} -S . -B build
           - name: Build
