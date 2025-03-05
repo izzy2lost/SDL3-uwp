@@ -44,7 +44,7 @@ jobs:
             Write-Host "Certificate not found. Aborting signing step."
             exit 1
           }
-          $signtoolPath = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.18362.0\x64\signtool.exe"
+          $signtoolPath = '"C:\Program Files (x86)\Windows Kits\10\bin\10.0.18362.0\x64\signtool.exe"'
           & $signtoolPath sign /f $cert.PSPath /p "" /tr http://timestamp.digicert.com /td sha256 /fd sha256 build/AppPackages/sdl-min/**/*.msix
 
       - name: Archive MSIX Package
