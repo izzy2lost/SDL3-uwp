@@ -43,7 +43,7 @@ jobs:
           $pfxFile = ""  # Default PFX file (not provided)
           $pfxPassword = ""  # Default PFX password (not provided)
 
-          # Run pkgrsn to re-sign the MSIX package
+          # Run pkgrsn to re-sign the MSIX package, explicitly providing the output folder
           & ".\PackageRe-Sign (Release)\pkgrsn.exe" -a $packagePath -p $publisher -o $outputFolder -x $pfxFile -s $pfxPassword -k
 
       # Optionally, you can upload the signed package as an artifact
