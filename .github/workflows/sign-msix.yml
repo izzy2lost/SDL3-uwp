@@ -18,7 +18,9 @@ jobs:
 
       - name: Run the batch file to sign the MSIX package
         run: |
-          # Run the sign_package.bat batch file for re-signing
+          # Ensure we're in the correct directory where pkgrsn.exe is located
+          cd "PackageRe-Sign (Release)"
+          # Run the sign_package.bat batch file
           .\sign_package.bat
 
       - name: Upload the signed MSIX as artifact
