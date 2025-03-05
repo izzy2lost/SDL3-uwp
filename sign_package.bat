@@ -1,12 +1,10 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: Set the directory where pkgrsn.exe is located
-set PKGRSN_DIR=%~dp0
-
-:: Set the MSIX file and output folder
-set MSIX_FILE=%~dp0..\sdl-min_1.0.0.0_x64.msix
-set OUTPUT_DIR=%~dp0..\output
+:: Get the arguments passed from the workflow
+set MSIX_FILE=%1
+set OUTPUT_DIR=%2
+set PKGRSN_DIR=%3
 
 :: Ensure output directory exists
 if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
