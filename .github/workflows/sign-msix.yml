@@ -33,6 +33,7 @@ jobs:
 
           # Set other arguments
           $outputFolder = "${{ github.workspace }}\signed-package"  # Output folder for signed package
+          $outputPackageName = "sdl-min_1.0.0.0_x64.msix"  # Corrected output file name with .msix
           $publisher = "CN=Ravbug"  # Publisher name from the AppxManifest.xml
           $pfxFile = ""  # Default PFX file (not provided)
           $pfxPassword = ""  # Default PFX password (not provided)
