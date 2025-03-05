@@ -3,13 +3,13 @@ on: [push, pull_request]
 
 jobs:
     build-win:
-        name: Build for Windows
+        name: Build for Windows UWP
         runs-on: windows-latest
         strategy:
           fail-fast: false
           matrix:
-              arch: [x64, ARM64]
-              target: [Windows, WindowsStore]
+              arch: [x64]
+              target: [WindowsStore]
 
         steps:
           - uses: actions/checkout@v4
@@ -26,37 +26,4 @@ jobs:
             with: 
                 name: sdl-min-${{ matrix.target }}-${{ matrix.arch }}
                 path: |
-                    build/Release/*.exe
-                    build/Release/*.dll
-
-    build-mac:
-        name: Build for Apple
-        runs-on: macos-14
-        strategy:
-          fail-fast: false
-          matrix:
-              target: [iOS, tvOS, visionOS, '']
-
-        steps:
-          - uses: actions/checkout@v4
-            with:
-                ref: df270da
-                submodules: true
-          - name: Setup Xcode version
-            uses: maxim-lobanov/setup-xcode@v1.6.0
-            with:
-                xcode-version: "15.2"
-          - name: Configure
-            run: cmake -G "Xcode" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO -DCMAKE_SYSTEM_NAME=${{ matrix.target }} -DSDL_STATIC=ON -DSDL_SHARED=OFF -S . -B build
-          - name: Build
-            run: cmake --build build --target install --config Release
-
-          - name: Create DMG
-            run: | 
-                cd build
-                hdiutil create -size 2g -srcfolder release -volname sdl_min_apple_${{ matrix.target }} sdl_min_apple_${{ matrix.target }}.dmg
-          - name: Upload Build
-            uses: actions/upload-artifact@v4
-            with: 
-                name: sdl-min-apple-${{ matrix.target }}
-                path: build/*.dmg
+                    build/Release/*.msix
