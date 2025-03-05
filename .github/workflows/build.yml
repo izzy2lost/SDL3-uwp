@@ -35,19 +35,30 @@ jobs:
         id: set_package_name
         run: |
           echo "PACKAGE_NAME=${{ github.event.inputs.package_name }}_${{ github.event.inputs.tag_name }}" >> $GITHUB_ENV
+        shell: pwsh
+
+      - name: Find SignTool with vswhere
+        id: find_signtool
+        run: |
+          $signtoolPath = & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.Windows10SDK -find **/x64/signtool.exe
+          if (-not $signtoolPath) {
+            Write-Host "SignTool.exe not found!"
+            exit 1
+          }
+          echo "SIGNTOOL_PATH=$signtoolPath" >> $env:GITHUB_ENV
+        shell: pwsh
 
       - name: Sign the MSIX package
         run: |
           $certThumbprint = $env:THUMBPRINT
           $cert = Get-ChildItem -Path "Cert:\CurrentUser\My" | Where-Object { $_.Thumbprint -eq $certThumbprint }
-          if ($cert -eq $null) {
-          Write-Host "Certificate not found. Aborting signing step."
-          exit 1
+          if (-not $cert) {
+            Write-Host "Certificate not found. Aborting signing step."
+            exit 1
           }
-          $signtoolPath = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.18362.0\x64\signtool.exe"
-          Start-Process -FilePath $signtoolPath -ArgumentList "sign /sha1 $certThumbprint /tr http://timestamp.digicert.com /td sha256 /fd sha256 build/AppPackages/sdl-min/**/*.msix" -Wait -NoNewWindow
+          & "${{ env.SIGNTOOL_PATH }}" sign /sha1 $certThumbprint /tr http://timestamp.digicert.com /td sha256 /fd sha256 build/AppPackages/sdl-min/**/*.msix
         shell: pwsh
-  
+
       - name: Archive MSIX Package
         run: |
           Compress-Archive -Path build/AppPackages/sdl-min/**/*.msix -DestinationPath build/AppPackages/sdl-min-${{ matrix.target }}-${{ matrix.arch }}.zip
