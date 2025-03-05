@@ -26,7 +26,7 @@ jobs:
           $pkgrsnPath = "$env:GITHUB_WORKSPACE\PackageRe-Sign (Release)"
 
           # Run the batch file to sign the MSIX package
-          cd $env:GITHUB_WORKSPACE  # Go to the root directory where the .bat file is located
+          cd "$env:GITHUB_WORKSPACE"  # Go to the root directory where the .bat file is located
           .\sign_package.bat "$msixFilePath" "$outputFolder" "$pkgrsnPath"
 
       - name: Upload the signed MSIX as artifact
