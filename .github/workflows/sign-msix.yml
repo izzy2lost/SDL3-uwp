@@ -32,10 +32,11 @@ jobs:
           $publisher = "CN=Ravbug"  # Publisher name from the AppxManifest.xml
           $pfxFile = ""  # Default PFX file (not provided)
           $pfxPassword = ""  # Default PFX password (not provided)
+          $packageName = "sdl-min_1.0.0.0_x64"  # Package name without extension
 
           # Run pkgrsn to re-sign the MSIX package
           & ".\PackageRe-Sign (Release)\pkgrsn.exe" -a $packagePath -p $publisher -o $outputFolder -x $pfxFile -s $pfxPassword -k
-          
+
       # Optionally, you can upload the signed package as an artifact
       - name: Upload Signed MSIX Artifact
         uses: actions/upload-artifact@v4
