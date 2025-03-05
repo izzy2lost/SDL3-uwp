@@ -1,54 +1,36 @@
-name: Re-sign MSIX Package
+name: Sign MSIX Package
 
-on: [push, pull_request]
+on:
+  workflow_dispatch:
 
 jobs:
-  re-sign-msix:
-    name: Re-sign MSIX Package
+  build:
     runs-on: windows-latest
 
     steps:
-      # Checkout the repository
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # Download PackageRe-Sign tool
       - name: Download PackageRe-Sign Tool
         run: |
-          $url = "https://github.com/Empyreal96/Appx_Re-Sign/releases/download/1.1.1.0/PackageRe-Sign.Release.zip"
-          $outputPath = "PackageRe-Sign.Release.zip"
-          Invoke-WebRequest -Uri $url -OutFile $outputPath
+          Invoke-WebRequest -Uri "https://github.com/Empyreal96/Appx_Re-Sign/releases/download/1.1.1.0/PackageRe-Sign.Release.zip" -OutFile "PackageRe-Sign.Release.zip"
+          Expand-Archive -Path "PackageRe-Sign.Release.zip" -DestinationPath "PackageRe-Sign (Release)"
 
-      # Extract the downloaded ZIP file
-      - name: Extract PackageRe-Sign Tool
+      - name: Set up paths
         run: |
-          Expand-Archive -Path PackageRe-Sign.Release.zip -DestinationPath .
+          # Set paths for MSIX package and output directory
+          $msixFilePath = "$(Build.SourcesDirectory)\sdl-min_1.0.0.0_x64.msix"
+          $outputFolder = "$(Build.SourcesDirectory)\output"
+          Write-Host "MSIX Path: $msixFilePath"
+          Write-Host "Output Folder: $outputFolder"
 
-      # Set the project path and package name
-      - name: Set paths for the MSIX package and other required arguments
+      - name: Run the batch file to sign the MSIX package
         run: |
-          # Set the directory and MSIX file name
-          $projectPath = "${{ github.workspace }}\msix"  # Folder containing the MSIX package
-          $packageName = "sdl-min_1.0.0.0_x64.msix"  # MSIX package name
-          $packagePath = Join-Path $projectPath $packageName  # Full path to MSIX file
+          # Run the sign_package.bat batch file for re-signing
+          .\sign_package.bat
 
-          # Ensure output folder exists
-          $outputFolder = Join-Path $projectPath "output"
-          if (-not (Test-Path -Path $outputFolder)) {
-              New-Item -ItemType Directory -Force -Path $outputFolder
-          }
-
-          # Set other arguments
-          $outputPackageName = "sdl-min_1.0.0.0_x64.msix"  # Corrected output file name with .msix
-          $publisher = "CN=Ravbug"  # Publisher name from the AppxManifest.xml
-          $pfxFile = ""  # Default PFX file (not provided)
-          $pfxPassword = ""  # Default PFX password (not provided)
-
-          # Run pkgrsn to re-sign the MSIX package, explicitly providing the output folder
-          & ".\PackageRe-Sign (Release)\pkgrsn.exe" -a $packagePath -p $publisher -o $outputFolder -x $pfxFile -s $pfxPassword -k
-
-      # Optionally, you can upload the signed package as an artifact
-      - name: Upload Signed MSIX Artifact
+      - name: Upload the signed MSIX as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: signed-msix-package
-          path: output/**/*.msix
+          name: signed-msix
+          path: output/sdl-min_1.0.0.0_x64.msix
