@@ -16,14 +16,6 @@ jobs:
           Invoke-WebRequest -Uri "https://github.com/Empyreal96/Appx_Re-Sign/releases/download/1.1.1.0/PackageRe-Sign.Release.zip" -OutFile "PackageRe-Sign.Release.zip"
           Expand-Archive -Path "PackageRe-Sign.Release.zip" -DestinationPath "PackageRe-Sign (Release)"
 
-      - name: Set up paths
-        run: |
-          # Set paths for MSIX package and output directory
-          $msixFilePath = "$(Build.SourcesDirectory)\sdl-min_1.0.0.0_x64.msix"
-          $outputFolder = "$(Build.SourcesDirectory)\output"
-          Write-Host "MSIX Path: $msixFilePath"
-          Write-Host "Output Folder: $outputFolder"
-
       - name: Run the batch file to sign the MSIX package
         run: |
           # Run the sign_package.bat batch file for re-signing
