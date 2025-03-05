@@ -23,16 +23,19 @@ jobs:
         run: |
           Expand-Archive -Path PackageRe-Sign.Release.zip -DestinationPath .
 
-      # Run the re-signing command using pkgrsn
-      - name: Re-sign the MSIX Package
+      # Set the project path and package name
+      - name: Set paths for the MSIX package and other required arguments
         run: |
-          # Set paths for the MSIX package and other required arguments
-          $packagePath = "${{ github.workspace }}\sdl-min_1.0.0.0_x64.msix"  # Corrected path for MSIX file in the repo root
+          # Set the directory and MSIX file name
+          $projectPath = "${{ github.workspace }}"  # Root directory where MSIX is located
+          $packageName = "sdl-min_1.0.0.0_x64.msix"  # MSIX package name
+          $packagePath = Join-Path $projectPath $packageName  # Full path to MSIX file
+
+          # Set other arguments
           $outputFolder = "${{ github.workspace }}\signed-package"  # Output folder for signed package
           $publisher = "CN=Ravbug"  # Publisher name from the AppxManifest.xml
           $pfxFile = ""  # Default PFX file (not provided)
           $pfxPassword = ""  # Default PFX password (not provided)
-          $packageName = "sdl-min_1.0.0.0_x64"  # Package name without extension
 
           # Run pkgrsn to re-sign the MSIX package
           & ".\PackageRe-Sign (Release)\pkgrsn.exe" -a $packagePath -p $publisher -o $outputFolder -x $pfxFile -s $pfxPassword -k
