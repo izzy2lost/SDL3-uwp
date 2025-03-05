@@ -27,12 +27,12 @@ jobs:
       - name: Set paths for the MSIX package and other required arguments
         run: |
           # Set the directory and MSIX file name
-          $projectPath = "${{ github.workspace }}"  # Root directory where MSIX is located
+          $projectPath = "${{ github.workspace }}\msix"  # Folder containing the MSIX package
           $packageName = "sdl-min_1.0.0.0_x64.msix"  # MSIX package name
           $packagePath = Join-Path $projectPath $packageName  # Full path to MSIX file
 
           # Ensure output folder exists
-          $outputFolder = Join-Path $projectPath "signed-package"
+          $outputFolder = Join-Path $projectPath "output"
           if (-not (Test-Path -Path $outputFolder)) {
               New-Item -ItemType Directory -Force -Path $outputFolder
           }
@@ -51,4 +51,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: signed-msix-package
-          path: signed-package/**/*.msix
+          path: output/**/*.msix
