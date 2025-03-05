@@ -1,0 +1,44 @@
+name: Re-sign MSIX Package
+
+on: [push, pull_request]
+
+jobs:
+  re-sign-msix:
+    name: Re-sign MSIX Package
+    runs-on: windows-latest
+
+    steps:
+      # Checkout the repository
+      - uses: actions/checkout@v4
+
+      # Download PackageRe-Sign tool
+      - name: Download PackageRe-Sign Tool
+        run: |
+          $url = "https://github.com/Empyreal96/Appx_Re-Sign/releases/download/1.1.1.0/PackageRe-Sign.Release.zip"
+          $outputPath = "PackageRe-Sign.Release.zip"
+          Invoke-WebRequest -Uri $url -OutFile $outputPath
+
+      # Extract the downloaded ZIP file
+      - name: Extract PackageRe-Sign Tool
+        run: |
+          Expand-Archive -Path PackageRe-Sign.Release.zip -DestinationPath .
+
+      # Run the re-signing command using pkgrsn
+      - name: Re-sign the MSIX Package
+        run: |
+          # Set paths for the MSIX package and other required arguments
+          $packagePath = "$(Build.SourcesDirectory)\sdl-min_1.0.0.0_x64.msix"  # Path to MSIX file
+          $outputFolder = "$(Build.SourcesDirectory)\signed-package"  # Output folder for signed package
+          $publisher = "CN=Ravbug"  # Publisher name from the AppxManifest.xml
+          $pfxFile = ""  # Default PFX file (not provided)
+          $pfxPassword = ""  # Default PFX password (not provided)
+
+          # Run pkgrsn to re-sign the MSIX package
+          & ".\PackageRe-Sign (Release)\pkgrsn.exe" -a $packagePath -p $publisher -o $outputFolder -x $pfxFile -s $pfxPassword -k
+          
+      # Optionally, you can upload the signed package as an artifact
+      - name: Upload Signed MSIX Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-msix-package
+          path: signed-package/**/*.msix
