@@ -31,8 +31,13 @@ jobs:
           $packageName = "sdl-min_1.0.0.0_x64.msix"  # MSIX package name
           $packagePath = Join-Path $projectPath $packageName  # Full path to MSIX file
 
+          # Ensure output folder exists
+          $outputFolder = Join-Path $projectPath "signed-package"
+          if (-not (Test-Path -Path $outputFolder)) {
+              New-Item -ItemType Directory -Force -Path $outputFolder
+          }
+
           # Set other arguments
-          $outputFolder = "${{ github.workspace }}\signed-package"  # Output folder for signed package
           $outputPackageName = "sdl-min_1.0.0.0_x64.msix"  # Corrected output file name with .msix
           $publisher = "CN=Ravbug"  # Publisher name from the AppxManifest.xml
           $pfxFile = ""  # Default PFX file (not provided)
