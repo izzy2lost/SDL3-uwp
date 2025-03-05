@@ -37,8 +37,8 @@ jobs:
           echo "PACKAGE_NAME=${{ github.event.inputs.package_name }}_${{ github.event.inputs.tag_name }}" >> $GITHUB_ENV
         shell: pwsh
 
-      - name: Add SignTool
-        uses: EID0S/add-signtool@v1
+      - name: Add Signtool Action
+        uses: KamaranL/add-signtool-action@v1
 
       - name: Sign the MSIX package
         run: |
