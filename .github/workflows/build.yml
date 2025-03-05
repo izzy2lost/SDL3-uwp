@@ -31,15 +31,6 @@ jobs:
           echo "THUMBPRINT=$($cert.Thumbprint)" >> $env:GITHUB_ENV
         shell: pwsh
 
-      - name: Export and Reimport Certificate
-        run: |
-          $cert = Get-ChildItem -Path "Cert:\CurrentUser\My" | Where-Object { $_.Thumbprint -eq "$env:THUMBPRINT" }
-          if ($cert) {
-            Export-Certificate -Cert $cert -FilePath $env:USERPROFILE\MyUWPCert.cer
-            Import-Certificate -FilePath $env:USERPROFILE\MyUWPCert.cer -CertStoreLocation "Cert:\LocalMachine\TrustedPeople"
-          }
-        shell: pwsh
-
       - name: Set Package Name
         id: set_package_name
         run: |
@@ -48,10 +39,22 @@ jobs:
 
       - name: Add Signtool Action
         uses: KamaranL/add-signtool-action@v1
-        with:
-          certThumbprint: ${{ env.THUMBPRINT }}
-          msixPath: D:\a\SDL3-uwp\SDL3-uwp\build\AppPackages\sdl-min\sdl-min_1.0.0.0_x64_Test\sdl-min_1.0.0.0_x64.msix
-          timestampUrl: http://timestamp.digicert.com
+
+      - name: Sign the MSIX Package
+        run: |
+          $certThumbprint = $env:THUMBPRINT
+          $cert = Get-ChildItem -Path "Cert:\CurrentUser\My" | Where-Object { $_.Thumbprint -eq $certThumbprint }
+          if (-not $cert) {
+            Write-Host "Certificate not found. Aborting signing step."
+            exit 1
+          }
+          $msixPath = "D:\a\SDL3-uwp\SDL3-uwp\build\AppPackages\sdl-min\sdl-min_1.0.0.0_x64_Test\sdl-min_1.0.0.0_x64.msix"
+          if (!(Test-Path $msixPath)) {
+            Write-Host "MSIX file not found!"
+            exit 1
+          }
+          signtool sign /sha1 $certThumbprint /tr http://timestamp.digicert.com /td sha256 /fd sha256 "$msixPath"
+        shell: pwsh
 
       - name: Archive MSIX Package
         run: |
