@@ -18,10 +18,16 @@ jobs:
 
       - name: Run the batch file to sign the MSIX package
         run: |
-          # Ensure we're in the correct directory where pkgrsn.exe is located
-          cd "PackageRe-Sign (Release)"
-          # Run the sign_package.bat batch file
-          .\sign_package.bat
+          # Ensure the MSIX file and output folder paths are correctly set
+          $msixFilePath = "$(Build.SourcesDirectory)\sdl-min_1.0.0.0_x64.msix"
+          $outputFolder = "$(Build.SourcesDirectory)\output"
+
+          # Set the path to the PackageRe-Sign folder where pkgrsn.exe is located
+          $pkgrsnPath = "$(Build.SourcesDirectory)\PackageRe-Sign (Release)"
+
+          # Run the batch file to sign the MSIX package
+          cd $(Build.SourcesDirectory)  # Go to the root directory where the .bat file is located
+          .\sign_package.bat "$msixFilePath" "$outputFolder" "$pkgrsnPath"
 
       - name: Upload the signed MSIX as artifact
         uses: actions/upload-artifact@v4
