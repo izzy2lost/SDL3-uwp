@@ -27,8 +27,8 @@ jobs:
       - name: Re-sign the MSIX Package
         run: |
           # Set paths for the MSIX package and other required arguments
-          $packagePath = "$(Build.SourcesDirectory)\sdl-min_1.0.0.0_x64.msix"  # Path to MSIX file
-          $outputFolder = "$(Build.SourcesDirectory)\signed-package"  # Output folder for signed package
+          $packagePath = "${{ github.workspace }}\sdl-min_1.0.0.0_x64.msix"  # Corrected path for MSIX file in the repo root
+          $outputFolder = "${{ github.workspace }}\signed-package"  # Output folder for signed package
           $publisher = "CN=Ravbug"  # Publisher name from the AppxManifest.xml
           $pfxFile = ""  # Default PFX file (not provided)
           $pfxPassword = ""  # Default PFX password (not provided)
