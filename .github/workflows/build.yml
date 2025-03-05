@@ -1,4 +1,4 @@
-name: Build Sample
+name: Build Sample & Sign
 on: [push, pull_request]
 
 jobs:
