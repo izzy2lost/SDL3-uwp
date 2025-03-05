@@ -41,12 +41,13 @@ jobs:
           $certThumbprint = $env:THUMBPRINT
           $cert = Get-ChildItem -Path "Cert:\CurrentUser\My" | Where-Object { $_.Thumbprint -eq $certThumbprint }
           if ($cert -eq $null) {
-            Write-Host "Certificate not found. Aborting signing step."
-            exit 1
+          Write-Host "Certificate not found. Aborting signing step."
+          exit 1
           }
-          $signtoolPath = '"C:\Program Files (x86)\Windows Kits\10\bin\10.0.18362.0\x64\signtool.exe"'
-          & $signtoolPath sign /f $cert.PSPath /p "" /tr http://timestamp.digicert.com /td sha256 /fd sha256 build/AppPackages/sdl-min/**/*.msix
-
+          $signtoolPath = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.18362.0\x64\signtool.exe"
+          Start-Process -FilePath $signtoolPath -ArgumentList "sign /sha1 $certThumbprint /tr http://timestamp.digicert.com /td sha256 /fd sha256 build/AppPackages/sdl-min/**/*.msix" -Wait -NoNewWindow
+        shell: pwsh
+  
       - name: Archive MSIX Package
         run: |
           Compress-Archive -Path build/AppPackages/sdl-min/**/*.msix -DestinationPath build/AppPackages/sdl-min-${{ matrix.target }}-${{ matrix.arch }}.zip
