@@ -40,7 +40,7 @@ jobs:
       - name: Find SignTool with vswhere
         id: find_signtool
         run: |
-          $signtoolPath = & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.Windows10SDK -find **/x64/signtool.exe
+          $signtoolPath = & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -find **/signtool.exe
           if (-not $signtoolPath) {
             Write-Host "SignTool.exe not found!"
             exit 1
