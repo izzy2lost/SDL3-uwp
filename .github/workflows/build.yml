@@ -1,48 +1,59 @@
 name: Build Sample
+
 on: [push, pull_request]
 
 jobs:
-    build-win:
-        name: Build for Windows UWP
-        runs-on: windows-latest
-        strategy:
-          fail-fast: false
-          matrix:
-              arch: [x64]
-              target: [WindowsStore]
+  build-win:
+    name: Build for Windows UWP
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64]
+        target: [WindowsStore]
 
-        steps:
-          - uses: actions/checkout@v4
-            with:
-             ref: df270daa8d6d48426e128e50c73357dfdf89afbf
-             submodules: true
-        
-          - name: Configure
-            run: cmake -DCMAKE_SYSTEM_NAME=${{ matrix.target }} -DCMAKE_SYSTEM_VERSION="10.0" -A${{ matrix.arch }} -S . -B build
-        
-          - name: Build
-            run: cmake --build build --target sdl-min --config Release
-      
-          - name: Generate Self-Signed Certificate
-            id: generate_cert
-            run: |
-              $cert = New-SelfSignedCertificate -CertStoreLocation "Cert:\CurrentUser\My" -Subject "CN=MyUWPCert" -KeyAlgorithm RSA -KeyLength 2048 -Provider "Microsoft Enhanced RSA and AES Cryptographic Provider" -KeyExportPolicy Exportable -NotAfter (Get-Date).AddYears(1) -Type CodeSigningCert
-              echo "THUMBPRINT=$($cert.Thumbprint)" >> $env:GITHUB_ENV
-            shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: df270daa8d6d48426e128e50c73357dfdf89afbf
+          submodules: true
 
-          - name: Sign the MSIX package
-            run: |
-              $certThumbprint = $env:THUMBPRINT
-              $cert = Get-ChildItem -Path "Cert:\CurrentUser\My" | Where-Object { $_.Thumbprint -eq $certThumbprint }
-              if ($cert -eq $null) {
-                Write-Host "Certificate not found. Aborting signing step."
-                exit 1
-              }
-              $signtoolPath = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.18362.0\x64\signtool.exe"
-              & $signtoolPath sign /f $cert.PSPath /p "" /tr http://timestamp.digicert.com /td sha256 /fd sha256 build/AppPackages/sdl-min/**/*.msix
+      - name: Configure
+        run: cmake -DCMAKE_SYSTEM_NAME=${{ matrix.target }} -DCMAKE_SYSTEM_VERSION="10.0" -A${{ matrix.arch }} -S . -B build
 
-          - name: Upload Build
-            uses: actions/upload-artifact@v4
-            with: 
-              name: sdl-min-${{ matrix.target }}-${{ matrix.arch }}
-              path: build/AppPackages/sdl-min/**/*.msix
+      - name: Build
+        run: cmake --build build --target sdl-min --config Release
+
+      - name: Generate Self-Signed Certificate
+        id: generate_cert
+        run: |
+          $cert = New-SelfSignedCertificate -CertStoreLocation "Cert:\CurrentUser\My" -Subject "CN=MyUWPCert" -KeyAlgorithm RSA -KeyLength 2048 -Provider "Microsoft Enhanced RSA and AES Cryptographic Provider" -KeyExportPolicy Exportable -NotAfter (Get-Date).AddYears(1) -Type CodeSigningCert
+          echo "THUMBPRINT=$($cert.Thumbprint)" >> $env:GITHUB_ENV
+        shell: pwsh
+
+      - name: Set Package Name
+        id: set_package_name
+        run: |
+          echo "PACKAGE_NAME=${{ github.event.inputs.package_name }}_${{ github.event.inputs.tag_name }}" >> $GITHUB_ENV
+
+      - name: Sign the MSIX package
+        run: |
+          $certThumbprint = $env:THUMBPRINT
+          $cert = Get-ChildItem -Path "Cert:\CurrentUser\My" | Where-Object { $_.Thumbprint -eq $certThumbprint }
+          if ($cert -eq $null) {
+            Write-Host "Certificate not found. Aborting signing step."
+            exit 1
+          }
+          $signtoolPath = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.18362.0\x64\signtool.exe"
+          & $signtoolPath sign /f $cert.PSPath /p "" /tr http://timestamp.digicert.com /td sha256 /fd sha256 build/AppPackages/sdl-min/**/*.msix
+
+      - name: Archive MSIX Package
+        run: |
+          Compress-Archive -Path build/AppPackages/sdl-min/**/*.msix -DestinationPath build/AppPackages/sdl-min-${{ matrix.target }}-${{ matrix.arch }}.zip
+        shell: pwsh
+
+      - name: Upload MSIX Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdl-min-${{ matrix.target }}-${{ matrix.arch }}
+          path: build/AppPackages/sdl-min-${{ matrix.target }}-${{ matrix.arch }}.zip
