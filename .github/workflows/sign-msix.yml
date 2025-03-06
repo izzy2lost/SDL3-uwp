@@ -13,11 +13,17 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
+    - name: Download PackageRe-Sign Tool
+      run: |
+        Invoke-WebRequest -Uri "https://github.com/Empyreal96/Appx_Re-Sign/releases/download/1.1.1.0/PackageRe-Sign.Release.zip" -OutFile "PackageRe-Sign.zip"
+        Expand-Archive -Path "PackageRe-Sign.zip" -DestinationPath "PackageRe-Sign"
+      shell: pwsh
+
     - name: Setup Variables
       run: |
         $env:MSIX_FILE = "$env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix"
         $env:OUTPUT_FOLDER = "$env:GITHUB_WORKSPACE\signed_output"
-        $env:PKGRSN_FOLDER = "$env:GITHUB_WORKSPACE\PackageRe-Sign (Release)\PackageRe-Sign"
+        $env:PKGRSN_FOLDER = "$env:GITHUB_WORKSPACE\PackageRe-Sign"
         $env:PKGRSN_EXE = "$env:PKGRSN_FOLDER\pkgrsn.exe"
 
         echo "MSIX File Path: $env:MSIX_FILE"
@@ -26,18 +32,7 @@ jobs:
 
         if (-Not (Test-Path $env:MSIX_FILE)) { Write-Error "ERROR: MSIX file not found!" ; exit 1 }
         if (-Not (Test-Path $env:PKGRSN_EXE)) { Write-Error "ERROR: pkgrsn.exe not found!" ; exit 1 }
-      shell: pwsh
-
-    - name: Download PackageRe-Sign Tool
-      run: |
-        Invoke-WebRequest -Uri "https://github.com/Empyreal96/Appx_Re-Sign/releases/download/1.1.1.0/PackageRe-Sign.Release.zip" -OutFile "PackageRe-Sign.zip"
-        Expand-Archive -Path "PackageRe-Sign.zip" -DestinationPath "PackageRe-Sign"
-      shell: pwsh
-
-    - name: Rename PackageRe-Sign Folder (Optional)
-      run: |
-        Rename-Item -Path "$env:GITHUB_WORKSPACE\PackageRe-Sign\PackageRe-Sign (Release)" -NewName "PackageReSign"
-      shell: pwsh
+      shell: pwsh    
 
     - name: Sign MSIX Package
       run: |
