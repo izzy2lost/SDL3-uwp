@@ -44,12 +44,20 @@ jobs:
           }
         shell: pwsh
 
-      # Step 6: Sign the MSIX package using the self-signed certificate
+      # Step 6: Use vswhere to locate MakeAppx and sign the MSIX package
       - name: Sign MSIX package
         run: |
-          # Full path to MakeAppx on the Visual Studio 2022 runner
-          $makeAppxPath = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\SDK\Microsoft.VisualStudio.Package.Folder\bin\MakeAppx.exe"
-          
+          # Use vswhere to locate MakeAppx
+          $vswherePath = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
+          $makeAppxPath = & $vswherePath -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          $makeAppxPath = "$makeAppxPath\MSBuild\Microsoft.VisualStudio.Package.Folder\bin\MakeAppx.exe"
+
+          # Verify if MakeAppx is found
+          if (-not (Test-Path -Path $makeAppxPath)) {
+            Write-Error "MakeAppx.exe not found at $makeAppxPath"
+            exit 1
+          }
+
           # Sign the MSIX package
           Start-Process -FilePath $makeAppxPath -ArgumentList "sign /p $msixFilePath /f $certificatePath /p yourpassword /o $outputFolder" -Wait
         shell: pwsh
