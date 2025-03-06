@@ -1,41 +1,36 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: Get the arguments passed from the workflow
+:: Get arguments
 set "MSIX_FILE=%~1"
 set "OUTPUT_DIR=%~2"
 set "PKGRSN_EXE=%~3"
 
-:: Ensure all arguments are provided
-if "%MSIX_FILE%"=="" (
-    echo Error: MSIX file path is missing.
-    exit /b 1
-)
-if "%OUTPUT_DIR%"=="" (
-    echo Error: Output directory is missing.
-    exit /b 1
-)
-if "%PKGRSN_EXE%"=="" (
-    echo Error: pkgrsn.exe path is missing.
+:: Validate paths
+if not exist "%MSIX_FILE%" (
+    echo ERROR: MSIX file not found at %MSIX_FILE%
     exit /b 1
 )
 
-:: Ensure output directory exists and is different from input package location
-if "%OUTPUT_DIR%"=="%MSIX_FILE%" (
-    echo Error: Output folder cannot be the same as the input package.
+if not exist "%PKGRSN_EXE%" (
+    echo ERROR: pkgrsn.exe not found at %PKGRSN_EXE%
     exit /b 1
 )
 
+:: Ensure output directory exists
 if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 
-:: Run pkgrsn.exe with appropriate arguments
+:: Explicitly set a different output folder
+set "SIGNED_MSIX=%OUTPUT_DIR%\signed_%~nx1"
+
+:: Run signing tool
 "%PKGRSN_EXE%" -a "%MSIX_FILE%" -o "%OUTPUT_DIR%" -p "CN=Ravbug" --skip
 
 :: Check for success
 if %errorlevel% neq 0 (
-    echo Error: Signing failed.
+    echo ERROR: Signing failed.
     exit /b %errorlevel%
 )
 
-echo Signing completed successfully!
+echo SUCCESS: Package signed and saved to %SIGNED_MSIX%
 exit /b 0
