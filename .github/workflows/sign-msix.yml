@@ -1,39 +1,59 @@
-name: Sign MSIX Package
+name: Build and Sign MSIX Package
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
-  sign-msix:
+  build:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-      - name: Download PackageRe-Sign Tool
-        run: |
-          Invoke-WebRequest -Uri "https://github.com/Empyreal96/Appx_Re-Sign/releases/download/1.1.1.0/PackageRe-Sign.Release.zip" -OutFile "PackageRe-Sign.Release.zip"
-          Expand-Archive -Path "PackageRe-Sign.Release.zip" -DestinationPath "PackageRe-Sign"
+    - name: Setup Variables
+      run: |
+        $env:MSIX_FILE = "$env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix"
+        $env:OUTPUT_FOLDER = "$env:GITHUB_WORKSPACE\signed_output"
+        $env:PKGRSN_FOLDER = "$env:GITHUB_WORKSPACE\PackageRe-Sign\PackageRe-Sign (Release)"
+        $env:PKGRSN_EXE = "$env:PKGRSN_FOLDER\pkgrsn.exe"
 
-      - name: Ensure correct paths
-        run: |
-          $msixFilePath = "$env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix"
-          $outputFolder = "$env:GITHUB_WORKSPACE\signed_output"
-          $pkgrsnExe = "$env:GITHUB_WORKSPACE\PackageRe-Sign\PackageRe-Sign (Release)\pkgrsn.exe"
-          
-          # Verify file existence before running
-          if (-Not (Test-Path $msixFilePath)) { Write-Error "ERROR: MSIX file not found!" ; exit 1 }
-          if (-Not (Test-Path $pkgrsnExe)) { Write-Error "ERROR: pkgrsn.exe not found!" ; exit 1 }
-          
-          echo "MSIX File Path: $msixFilePath"
-          echo "Output Folder: $outputFolder"
-          echo "pkgrsn.exe Path: $pkgrsnExe"
+        echo "MSIX File Path: $env:MSIX_FILE"
+        echo "Output Folder: $env:OUTPUT_FOLDER"
+        echo "PKGRSN Path: $env:PKGRSN_EXE"
 
-          .\sign_package.bat "`"$msixFilePath`"" "`"$outputFolder`"" "`"$pkgrsnExe`""
+        if (-Not (Test-Path $env:MSIX_FILE)) { Write-Error "ERROR: MSIX file not found!" ; exit 1 }
+        if (-Not (Test-Path $env:PKGRSN_EXE)) { Write-Error "ERROR: pkgrsn.exe not found!" ; exit 1 }
+      shell: pwsh
 
-      - name: Upload the signed MSIX as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: signed-msix
-          path: signed_output/signed_sdl-min_1.0.0.0_x64.msix
+    - name: Download PackageRe-Sign Tool
+      run: |
+        Invoke-WebRequest -Uri "https://github.com/Empyreal96/Appx_Re-Sign/releases/download/1.1.1.0/PackageRe-Sign.Release.zip" -OutFile "PackageRe-Sign.zip"
+        Expand-Archive -Path "PackageRe-Sign.zip" -DestinationPath "PackageRe-Sign"
+      shell: pwsh
+
+    - name: Rename PackageRe-Sign Folder (Optional)
+      run: |
+        Rename-Item -Path "$env:GITHUB_WORKSPACE\PackageRe-Sign\PackageRe-Sign (Release)" -NewName "PackageReSign"
+      shell: pwsh
+
+    - name: Sign MSIX Package
+      run: |
+        $msixFilePath = "$env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix"
+        $outputFolder = "$env:GITHUB_WORKSPACE\signed_output"
+        $pkgrsnExe = "$env:GITHUB_WORKSPACE\PackageReSign\pkgrsn.exe"
+
+        if (-Not (Test-Path $msixFilePath)) { Write-Error "ERROR: MSIX file not found!" ; exit 1 }
+        if (-Not (Test-Path $pkgrsnExe)) { Write-Error "ERROR: pkgrsn.exe not found!" ; exit 1 }
+
+        echo "Signing MSIX package..."
+        Start-Process -FilePath $pkgrsnExe -ArgumentList "-a `"$msixFilePath`" -o `"$outputFolder`" -p `"CN=Ravbug`" --skip" -NoNewWindow -Wait
+      shell: pwsh
+
+    - name: Upload Signed MSIX Package
+      uses: actions/upload-artifact@v4
+      with:
+        name: Signed-MSIX
+        path: ${{ github.workspace }}/signed_output
