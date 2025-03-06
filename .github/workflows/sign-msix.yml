@@ -21,50 +21,44 @@ jobs:
       # Step 3: Generate self-signed certificate using PowerShell
       - name: Generate self-signed certificate
         run: |
+          # Generate the self-signed certificate
           $cert = New-SelfSignedCertificate -CertStoreLocation Cert:\CurrentUser\My -DnsName "CN=Ravbug" -KeyAlgorithm RSA -KeyLength 2048 -NotAfter (Get-Date).AddYears(1)
-          Export-PfxCertificate -Cert $cert -FilePath "$env:GITHUB_WORKSPACE\certificate.pfx" -Password (ConvertTo-SecureString -String "yourpassword" -Force -AsPlainText)
+          
+          # Export the certificate to .cer (certificate) format for later usage in signing
+          Export-Certificate -Cert $cert -FilePath "$env:GITHUB_WORKSPACE\certificate.cer"
         shell: pwsh
 
-      # Step 4: Set paths for MSIX and certificate
+      # Step 4: Define paths and MSIX file
       - name: Set paths for MSIX and certificate
         run: |
           $msixFilePath = "$env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix"
           $outputFolder = "$env:GITHUB_WORKSPACE\signed_output"
-          $certificatePath = "$env:GITHUB_WORKSPACE\certificate.pfx"
+          $certificatePath = "$env:GITHUB_WORKSPACE\certificate.cer"
           echo "MSIX file path: $msixFilePath"
           echo "Output folder: $outputFolder"
           echo "Certificate path: $certificatePath"
         shell: pwsh
 
-      # Step 5: Create output folder if not exists
-      - name: Create output folder if not exists
+      # Step 5: Sign the MSIX package using SignTool with the self-signed certificate
+      - name: Sign MSIX package
         run: |
+          # Make sure output folder exists
           if (-not (Test-Path -Path "$env:GITHUB_WORKSPACE\signed_output")) {
             New-Item -ItemType Directory -Path "$env:GITHUB_WORKSPACE\signed_output"
           }
+          
+          # Full path to SignTool
+          $signToolPath = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe"
+          $msixFilePath = "$env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix"
+          $outputFolder = "$env:GITHUB_WORKSPACE\signed_output"
+          
+          # Sign the MSIX file using the self-signed certificate from the Cert store
+          Start-Process -FilePath $signToolPath -ArgumentList "sign /s MY /n ""Ravbug"" /t http://timestamp.digicert.com /v $msixFilePath" -Wait
         shell: pwsh
 
-      # Step 6: Use vswhere to locate MakeAppx and sign the MSIX package
-      - name: Sign MSIX package
-        run: |
-          # Use vswhere to locate MakeAppx
-          $vswherePath = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
-          $makeAppxPath = & $vswherePath -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-          $makeAppxPath = "$makeAppxPath\MSBuild\Microsoft.VisualStudio.Package.Folder\bin\MakeAppx.exe"
-
-          # Verify if MakeAppx is found
-          if (-not (Test-Path -Path $makeAppxPath)) {
-            Write-Error "MakeAppx.exe not found at $makeAppxPath"
-            exit 1
-          }
-
-          # Sign the MSIX package
-          Start-Process -FilePath $makeAppxPath -ArgumentList "sign /p $msixFilePath /f $certificatePath /p yourpassword /o $outputFolder" -Wait
-        shell: pwsh
-
-      # Step 7: Upload signed MSIX package
-      - name: Upload signed MSIX package
+      # Step 6: Upload signed MSIX file as artifact
+      - name: Upload signed MSIX
         uses: actions/upload-artifact@v4
         with:
           name: signed-msix
-          path: ${{ github.workspace }}\signed_output\sdl-min_1.0.0.0_x64.msix
+          path: ${{ github.workspace }}/signed_output
