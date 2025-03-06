@@ -11,10 +11,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download PackageRe-Sign Tool
+      - name: Download and Extract PackageRe-Sign Tool
         run: |
           Invoke-WebRequest -Uri "https://github.com/Empyreal96/Appx_Re-Sign/releases/download/1.1.1.0/PackageRe-Sign.Release.zip" -OutFile "PackageRe-Sign.Release.zip"
-          Expand-Archive -Path "PackageRe-Sign.Release.zip" -DestinationPath "PackageRe-Sign (Release)"
+          Expand-Archive -Path "PackageRe-Sign.Release.zip" -DestinationPath "PackageRe-Sign"
+
+      - name: Verify Extraction (Debugging Step)
+        run: |
+          Write-Host "Listing contents of extracted folder:"
+          Get-ChildItem -Path "$env:GITHUB_WORKSPACE\PackageRe-Sign" -Recurse
 
       - name: Run the batch file to sign the MSIX package
         run: |
@@ -23,13 +28,17 @@ jobs:
           $outputFolder = "$env:GITHUB_WORKSPACE\output"
           
           # Set the path to the PackageRe-Sign folder where pkgrsn.exe is located
-          $pkgrsnPath = "$env:GITHUB_WORKSPACE\PackageRe-Sign (Release)"
-          
-          # Escape the path to pkgrsn.exe properly for PowerShell
-          $pkgrsnExe = "$pkgrsnPath\pkgrsn.exe"
-          
-          # Use the Start-Process cmdlet to invoke pkgrsn.exe with the correct arguments
-          Start-Process -FilePath $pkgrsnExe -ArgumentList "`"$msixFilePath`", `"$outputFolder`""
+          $pkgrsnPath = "$env:GITHUB_WORKSPACE\PackageRe-Sign"
+
+          # Ensure pkgrsn.exe exists
+          if (-Not (Test-Path "$pkgrsnPath\pkgrsn.exe")) {
+            Write-Host "Error: pkgrsn.exe not found at $pkgrsnPath"
+            exit 1
+          }
+
+          # Run the batch file to sign the MSIX package
+          cd "$env:GITHUB_WORKSPACE"  # Go to the root directory where the .bat file is located
+          .\sign_package.bat "`"$msixFilePath`" "`"$outputFolder`" "`"$pkgrsnPath\pkgrsn.exe`""
 
       - name: Upload the signed MSIX as artifact
         uses: actions/upload-artifact@v4
