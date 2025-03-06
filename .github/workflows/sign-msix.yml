@@ -18,15 +18,14 @@ jobs:
 
       - name: Ensure correct paths
         run: |
-          echo "Workspace: $env:GITHUB_WORKSPACE"
-
-      - name: Run the batch file to sign the MSIX package
-        run: |
           $msixFilePath = "$env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix"
           $outputFolder = "$env:GITHUB_WORKSPACE\signed_output"
           $pkgrsnExe = "$env:GITHUB_WORKSPACE\PackageRe-Sign\PackageRe-Sign (Release)\pkgrsn.exe"
           
-          # Ensure paths are correct
+          # Verify file existence before running
+          if (-Not (Test-Path $msixFilePath)) { Write-Error "ERROR: MSIX file not found!" ; exit 1 }
+          if (-Not (Test-Path $pkgrsnExe)) { Write-Error "ERROR: pkgrsn.exe not found!" ; exit 1 }
+          
           echo "MSIX File Path: $msixFilePath"
           echo "Output Folder: $outputFolder"
           echo "pkgrsn.exe Path: $pkgrsnExe"
@@ -37,4 +36,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: signed-msix
-          path: signed_output/sdl-min_1.0.0.0_x64.msix
+          path: signed_output/signed_sdl-min_1.0.0.0_x64.msix
