@@ -4,44 +4,54 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  sign:
     runs-on: windows-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download and Extract PackageRe-Sign Tool
+      - name: Download PackageRe-Sign Tool
         run: |
           Invoke-WebRequest -Uri "https://github.com/Empyreal96/Appx_Re-Sign/releases/download/1.1.1.0/PackageRe-Sign.Release.zip" -OutFile "PackageRe-Sign.Release.zip"
           Expand-Archive -Path "PackageRe-Sign.Release.zip" -DestinationPath "PackageRe-Sign"
 
-      - name: Verify Extraction (Debugging Step)
+      - name: Ensure MSIX file and paths are set
         run: |
-          Write-Host "Listing contents of extracted folder:"
-          Get-ChildItem -Path "$env:GITHUB_WORKSPACE\PackageRe-Sign" -Recurse
-
-      - name: Run the batch file to sign the MSIX package
-        run: |
-          # Ensure the MSIX file and output folder paths are correctly set
+          # Define paths
           $msixFilePath = "$env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix"
           $outputFolder = "$env:GITHUB_WORKSPACE\output"
-          
-          # Set the path to the PackageRe-Sign folder where pkgrsn.exe is located
-          $pkgrsnPath = "$env:GITHUB_WORKSPACE\PackageRe-Sign"
+          $pkgrsnPath = "$env:GITHUB_WORKSPACE\PackageRe-Sign\PackageRe-Sign (Release)\pkgrsn.exe"
 
-          # Ensure pkgrsn.exe exists
-          if (-Not (Test-Path "$pkgrsnPath\pkgrsn.exe")) {
+          # Check if MSIX file exists
+          if (-Not (Test-Path $msixFilePath)) {
+            Write-Host "Error: MSIX file not found at $msixFilePath"
+            exit 1
+          }
+
+          # Check if pkgrsn.exe exists
+          if (-Not (Test-Path $pkgrsnPath)) {
             Write-Host "Error: pkgrsn.exe not found at $pkgrsnPath"
             exit 1
           }
 
-          # Run the batch file to sign the MSIX package
-          cd "$env:GITHUB_WORKSPACE"  # Go to the root directory where the .bat file is located
-          .\sign_package.bat "`"$msixFilePath`" "`"$outputFolder`" "`"$pkgrsnPath\pkgrsn.exe`""
+          # Create output folder if it doesn't exist
+          if (-Not (Test-Path $outputFolder)) {
+            New-Item -ItemType Directory -Path $outputFolder | Out-Null
+          }
+
+          # Save environment variables for later steps
+          echo "MSIX_FILE_PATH=$msixFilePath" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "OUTPUT_FOLDER=$outputFolder" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "PKGRSN_PATH=$pkgrsnPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Run the batch file to sign the MSIX package
+        run: |
+          cd "$env:GITHUB_WORKSPACE"  # Ensure we're in the correct working directory
+          .\sign_package.bat "`"$env:MSIX_FILE_PATH`"" "`"$env:OUTPUT_FOLDER`"" "`"$env:PKGRSN_PATH`""
 
       - name: Upload the signed MSIX as artifact
         uses: actions/upload-artifact@v4
         with:
           name: signed-msix
-          path: output/sdl-min_1.0.0.0_x64.msix
+          path: ${{ env.OUTPUT_FOLDER }}/sdl-min_1.0.0.0_x64.msix
