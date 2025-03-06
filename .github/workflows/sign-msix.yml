@@ -25,12 +25,11 @@ jobs:
           # Set the path to the PackageRe-Sign folder where pkgrsn.exe is located
           $pkgrsnPath = "$env:GITHUB_WORKSPACE\PackageRe-Sign (Release)"
           
-          # Ensure the path to pkgrsn.exe is fully quoted (handle space in folder name)
-          $pkgrsnExe = "`"$pkgrsnPath\pkgrsn.exe`""
+          # Escape the path to pkgrsn.exe properly for PowerShell
+          $pkgrsnExe = "$pkgrsnPath\pkgrsn.exe"
           
-          # Run the batch file to sign the MSIX package with properly quoted paths
-          cd "$env:GITHUB_WORKSPACE"  # Go to the root directory where the .bat file is located
-          .\sign_package.bat "`"$msixFilePath`" "`"$outputFolder`" $pkgrsnExe"
+          # Use the Start-Process cmdlet to invoke pkgrsn.exe with the correct arguments
+          Start-Process -FilePath $pkgrsnExe -ArgumentList "`"$msixFilePath`", `"$outputFolder`""
 
       - name: Upload the signed MSIX as artifact
         uses: actions/upload-artifact@v4
