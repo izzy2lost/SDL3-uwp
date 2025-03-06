@@ -17,7 +17,7 @@ jobs:
       run: |
         $env:MSIX_FILE = "$env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix"
         $env:OUTPUT_FOLDER = "$env:GITHUB_WORKSPACE\signed_output"
-        $env:PKGRSN_FOLDER = "$env:GITHUB_WORKSPACE\PackageRe-Sign\PackageRe-Sign (Release)"
+        $env:PKGRSN_FOLDER = "$env:GITHUB_WORKSPACE\PackageRe-Sign (Release)\PackageRe-Sign"
         $env:PKGRSN_EXE = "$env:PKGRSN_FOLDER\pkgrsn.exe"
 
         echo "MSIX File Path: $env:MSIX_FILE"
