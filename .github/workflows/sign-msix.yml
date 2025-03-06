@@ -1,4 +1,4 @@
-name: Build and Sign MSIX Package
+name: MSIX Signing
 
 on:
   push:
@@ -6,49 +6,57 @@ on:
       - main
 
 jobs:
-  build:
+  sign-msix:
     runs-on: windows-latest
-
+    
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+      # Step 1: Checkout the code repository
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Download PackageRe-Sign Tool
-      run: |
-        Invoke-WebRequest -Uri "https://github.com/Empyreal96/Appx_Re-Sign/releases/download/1.1.1.0/PackageRe-Sign.Release.zip" -OutFile "PackageRe-Sign.zip"
-        Expand-Archive -Path "PackageRe-Sign.zip" -DestinationPath "PackageRe-Sign"
-      shell: pwsh
+      # Step 2: Install PowerShell module for certificate creation
+      - name: Install PowerShell module
+        run: Install-Module -Name PSScriptTools -Force -Scope CurrentUser
 
-    - name: Setup Variables
-      run: |
-        $env:MSIX_FILE = "$env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix"
-        $env:OUTPUT_FOLDER = "$env:GITHUB_WORKSPACE\signed_output"
-        $env:PKGRSN_FOLDER = "$env:GITHUB_WORKSPACE\PackageRe-Sign"
-        $env:PKGRSN_EXE = "$env:PKGRSN_FOLDER\pkgrsn.exe"
+      # Step 3: Generate self-signed certificate using PowerShell
+      - name: Generate self-signed certificate
+        run: |
+          $cert = New-SelfSignedCertificate -CertStoreLocation Cert:\CurrentUser\My -DnsName "CN=Ravbug" -KeyAlgorithm RSA -KeyLength 2048 -NotAfter (Get-Date).AddYears(1)
+          Export-PfxCertificate -Cert $cert -FilePath "$env:GITHUB_WORKSPACE\certificate.pfx" -Password (ConvertTo-SecureString -String "yourpassword" -Force -AsPlainText)
+        shell: pwsh
 
-        echo "MSIX File Path: $env:MSIX_FILE"
-        echo "Output Folder: $env:OUTPUT_FOLDER"
-        echo "PKGRSN Path: $env:PKGRSN_EXE"
+      # Step 4: Define paths and MSIX file
+      - name: Set paths for MSIX and certificate
+        run: |
+          $msixFilePath = "$env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix"
+          $outputFolder = "$env:GITHUB_WORKSPACE\signed_output"
+          $certificatePath = "$env:GITHUB_WORKSPACE\certificate.pfx"
+          echo "MSIX file path: $msixFilePath"
+          echo "Output folder: $outputFolder"
+          echo "Certificate path: $certificatePath"
+        shell: pwsh
 
-        if (-Not (Test-Path $env:MSIX_FILE)) { Write-Error "ERROR: MSIX file not found!" ; exit 1 }
-        if (-Not (Test-Path $env:PKGRSN_EXE)) { Write-Error "ERROR: pkgrsn.exe not found!" ; exit 1 }
-      shell: pwsh    
+      # Step 5: Sign the MSIX package using the self-signed certificate
+      - name: Sign MSIX package
+        run: |
+          # Make sure output folder exists
+          if (-not (Test-Path -Path "$env:GITHUB_WORKSPACE\signed_output")) {
+            New-Item -ItemType Directory -Path "$env:GITHUB_WORKSPACE\signed_output"
+          }
+          
+          # Sign the MSIX package
+          $msixFilePath = "$env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix"
+          $outputFolder = "$env:GITHUB_WORKSPACE\signed_output"
+          $certificatePath = "$env:GITHUB_WORKSPACE\certificate.pfx"
+          $password = "yourpassword"
+          
+          # Use MakeAppx to sign the MSIX file
+          Start-Process -FilePath "MakeAppx" -ArgumentList "sign /p $msixFilePath /f $certificatePath /p $password /o $outputFolder" -Wait
+        shell: pwsh
 
-    - name: Sign MSIX Package
-      run: |
-        $msixFilePath = "$env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix"
-        $outputFolder = "$env:GITHUB_WORKSPACE\signed_output"
-        $pkgrsnExe = "$env:GITHUB_WORKSPACE\PackageReSign\pkgrsn.exe"
-
-        if (-Not (Test-Path $msixFilePath)) { Write-Error "ERROR: MSIX file not found!" ; exit 1 }
-        if (-Not (Test-Path $pkgrsnExe)) { Write-Error "ERROR: pkgrsn.exe not found!" ; exit 1 }
-
-        echo "Signing MSIX package..."
-        Start-Process -FilePath $pkgrsnExe -ArgumentList "-a `"$msixFilePath`" -o `"$outputFolder`" -p `"CN=Ravbug`" --skip" -NoNewWindow -Wait
-      shell: pwsh
-
-    - name: Upload Signed MSIX Package
-      uses: actions/upload-artifact@v4
-      with:
-        name: Signed-MSIX
-        path: ${{ github.workspace }}/signed_output
+      # Step 6: Upload the signed MSIX package as an artifact
+      - name: Upload signed MSIX package
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-msix
+          path: ${{ github.workspace }}\signed_output\sdl-min_1.0.0.0_x64.msix
