@@ -39,15 +39,16 @@ jobs:
           echo "Certificate path: $certificatePath"
         shell: pwsh
 
-      # Step 5: Unpack the MSIX file in Visual Studio Developer Command Prompt
-      - name: Unpack MSIX file using VS Dev Command Prompt
+      # Step 5: Unpack the MSIX file using MakeAppx directly from the Windows SDK
+      - name: Unpack MSIX file using MakeAppx
         shell: pwsh
         run: |
-          # Launching Visual Studio Developer Command Prompt to set the environment
-          $vsDevCmd = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VsDevCmd.bat"
+          # Path to MakeAppx (part of the Windows SDK)
+          $makeAppxPath = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\MakeAppx.exe"
+          $unpackedFolderPath = "$env:GITHUB_WORKSPACE\unpacked"
           
-          # Run MakeAppx inside the developer command prompt
-          Start-Process -FilePath $vsDevCmd -ArgumentList "/c MakeAppx unpack /p $env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix /d $env:GITHUB_WORKSPACE\unpacked" -Wait
+          # Unpack the MSIX file
+          Start-Process -FilePath $makeAppxPath -ArgumentList "unpack /p $env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix /d $unpackedFolderPath" -Wait
         env:
           GITHUB_WORKSPACE: ${{ github.workspace }}
 
