@@ -25,7 +25,7 @@ jobs:
           Export-PfxCertificate -Cert $cert -FilePath "$env:GITHUB_WORKSPACE\certificate.pfx" -Password (ConvertTo-SecureString -String "yourpassword" -Force -AsPlainText)
         shell: pwsh
 
-      # Step 4: Define paths and MSIX file
+      # Step 4: Set paths for MSIX and certificate
       - name: Set paths for MSIX and certificate
         run: |
           $msixFilePath = "$env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix"
@@ -36,25 +36,25 @@ jobs:
           echo "Certificate path: $certificatePath"
         shell: pwsh
 
-      # Step 5: Sign the MSIX package using the self-signed certificate
-      - name: Sign MSIX package
+      # Step 5: Create output folder if not exists
+      - name: Create output folder if not exists
         run: |
-          # Make sure output folder exists
           if (-not (Test-Path -Path "$env:GITHUB_WORKSPACE\signed_output")) {
             New-Item -ItemType Directory -Path "$env:GITHUB_WORKSPACE\signed_output"
           }
-          
-          # Sign the MSIX package
-          $msixFilePath = "$env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix"
-          $outputFolder = "$env:GITHUB_WORKSPACE\signed_output"
-          $certificatePath = "$env:GITHUB_WORKSPACE\certificate.pfx"
-          $password = "yourpassword"
-          
-          # Use MakeAppx to sign the MSIX file
-          Start-Process -FilePath "MakeAppx" -ArgumentList "sign /p $msixFilePath /f $certificatePath /p $password /o $outputFolder" -Wait
         shell: pwsh
 
-      # Step 6: Upload the signed MSIX package as an artifact
+      # Step 6: Sign the MSIX package using the self-signed certificate
+      - name: Sign MSIX package
+        run: |
+          # Full path to MakeAppx on the Visual Studio 2022 runner
+          $makeAppxPath = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\SDK\Microsoft.VisualStudio.Package.Folder\bin\MakeAppx.exe"
+          
+          # Sign the MSIX package
+          Start-Process -FilePath $makeAppxPath -ArgumentList "sign /p $msixFilePath /f $certificatePath /p yourpassword /o $outputFolder" -Wait
+        shell: pwsh
+
+      # Step 7: Upload signed MSIX package
       - name: Upload signed MSIX package
         uses: actions/upload-artifact@v4
         with:
