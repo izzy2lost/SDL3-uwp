@@ -24,16 +24,18 @@ jobs:
           # Generate the self-signed certificate
           $cert = New-SelfSignedCertificate -CertStoreLocation Cert:\CurrentUser\My -DnsName "CN=Ravbug" -KeyAlgorithm RSA -KeyLength 2048 -NotAfter (Get-Date).AddYears(1)
           
-          # Export the certificate to .cer (certificate) format for later usage in signing
-          Export-Certificate -Cert $cert -FilePath "$env:GITHUB_WORKSPACE\certificate.cer"
+          # Export the certificate to .pfx format for later usage in signing
+          Export-PfxCertificate -Cert $cert -FilePath "$env:GITHUB_WORKSPACE\certificate.pfx" -Password (ConvertTo-SecureString -String "yourpassword" -Force -AsPlainText)
         shell: pwsh
 
       # Step 4: Set paths for MSIX and certificate
       - name: Set paths for MSIX and certificate
         run: |
           $msixFilePath = "$env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix"
-          $certificatePath = "$env:GITHUB_WORKSPACE\certificate.cer"
+          $outputFolder = "$env:GITHUB_WORKSPACE\signed_output"
+          $certificatePath = "$env:GITHUB_WORKSPACE\certificate.pfx"
           echo "MSIX file path: $msixFilePath"
+          echo "Output folder: $outputFolder"
           echo "Certificate path: $certificatePath"
         shell: pwsh
 
@@ -44,22 +46,22 @@ jobs:
           $makeAppxPath = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\SDK\Microsoft.VisualStudio.Package.Folder\bin\MakeAppx.exe"
           $unpackedFolderPath = "$env:GITHUB_WORKSPACE\unpacked"
           
-          # Unpack the MSIX file to a temporary directory using the VS developer command prompt
-          Start-Process -FilePath "cmd.exe" -ArgumentList "/c ""C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Tools\vsdevcmd.bat"" && MakeAppx unpack /p $msixFilePath /d $unpackedFolderPath" -Wait
+          # Unpack the MSIX file to a temporary directory using MakeAppx
+          Start-Process -FilePath $makeAppxPath -ArgumentList "unpack /p $msixFilePath /d $unpackedFolderPath" -Wait
         shell: pwsh
 
-      # Step 6: Sign the MSIX package
+      # Step 6: Sign the MSIX package with SignTool
       - name: Sign MSIX package
         run: |
           # Full path to SignTool
           $signToolPath = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe"
           $unpackedFolderPath = "$env:GITHUB_WORKSPACE\unpacked"
           
-          # Sign the MSIX package (not just the manifest, the entire MSIX file)
+          # Sign the MSIX package using the .pfx certificate
           Start-Process -FilePath $signToolPath -ArgumentList "sign /f $env:GITHUB_WORKSPACE\certificate.pfx /p yourpassword /t http://timestamp.digicert.com /v $msixFilePath" -Wait
         shell: pwsh
 
-      # Step 7: Upload signed MSIX
+      # Step 7: Upload the signed MSIX
       - name: Upload signed MSIX
         uses: actions/upload-artifact@v4
         with:
