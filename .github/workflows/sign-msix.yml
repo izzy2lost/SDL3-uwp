@@ -63,11 +63,11 @@ jobs:
       - name: Repack the signed MSIX package
         run: |
           # Repack the signed MSIX package
-          $repackedMsixPath = "$env:GITHUB_WORKSPACE\signed_sdl-min_1.0.0.0_x64.msix"
+          $msixFilePath = "$env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix"
           $makeAppxPath = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\SDK\Microsoft.VisualStudio.Package.Folder\bin\MakeAppx.exe"
           
           # Repack the MSIX file after signing
-          Start-Process -FilePath "cmd.exe" -ArgumentList "/c ""C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Tools\vsdevcmd.bat"" && MakeAppx pack /d $unpackedFolderPath /p $repackedMsixPath" -Wait
+          Start-Process -FilePath "cmd.exe" -ArgumentList "/c ""C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Tools\vsdevcmd.bat"" && MakeAppx pack /d $unpackedFolderPath /p $msixFilePath" -Wait
         shell: pwsh
 
       # Step 8: Upload signed MSIX
@@ -75,4 +75,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: signed-msix
-          path: ${{ github.workspace }}/signed_sdl-min_1.0.0.0_x64.msix
+          path: ${{ github.workspace }}/sdl-min_1.0.0.0_x64.msix
