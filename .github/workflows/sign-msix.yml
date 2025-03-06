@@ -39,27 +39,28 @@ jobs:
           echo "Certificate path: $certificatePath"
         shell: pwsh
 
-      # Step 5: Unpack the MSIX file
-      - name: Unpack MSIX file
-        run: |
-          # Full path to MakeAppx for unpacking
-          $makeAppxPath = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\SDK\Microsoft.VisualStudio.Package.Folder\bin\MakeAppx.exe"
-          $unpackedFolderPath = "$env:GITHUB_WORKSPACE\unpacked"
-          
-          # Unpack the MSIX file to a temporary directory using MakeAppx
-          Start-Process -FilePath $makeAppxPath -ArgumentList "unpack /p $msixFilePath /d $unpackedFolderPath" -Wait
+      # Step 5: Unpack the MSIX file in Visual Studio Developer Command Prompt
+      - name: Unpack MSIX file using VS Dev Command Prompt
         shell: pwsh
+        run: |
+          # Launching Visual Studio Developer Command Prompt to set the environment
+          $vsDevCmd = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VsDevCmd.bat"
+          
+          # Run MakeAppx inside the developer command prompt
+          Start-Process -FilePath $vsDevCmd -ArgumentList "/c MakeAppx unpack /p $env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix /d $env:GITHUB_WORKSPACE\unpacked" -Wait
+        env:
+          GITHUB_WORKSPACE: ${{ github.workspace }}
 
-      # Step 6: Sign the MSIX package with SignTool
+      # Step 6: Sign the MSIX package
       - name: Sign MSIX package
+        shell: pwsh
         run: |
           # Full path to SignTool
           $signToolPath = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe"
-          $unpackedFolderPath = "$env:GITHUB_WORKSPACE\unpacked"
+          $msixFilePath = "$env:GITHUB_WORKSPACE\sdl-min_1.0.0.0_x64.msix"
           
           # Sign the MSIX package using the .pfx certificate
           Start-Process -FilePath $signToolPath -ArgumentList "sign /f $env:GITHUB_WORKSPACE\certificate.pfx /p yourpassword /t http://timestamp.digicert.com /v $msixFilePath" -Wait
-        shell: pwsh
 
       # Step 7: Upload the signed MSIX
       - name: Upload signed MSIX
