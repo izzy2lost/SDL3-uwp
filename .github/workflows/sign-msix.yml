@@ -48,7 +48,7 @@ jobs:
           Start-Process -FilePath $signToolPath -ArgumentList "sign /s MY /n ""Ravbug"" /t http://timestamp.digicert.com /v $msixFilePath" -Wait
         shell: pwsh
 
-      # Step 6: Upload signed MSIX file as artifact
+      # Step 6: Upload signed MSIX
       - name: Upload signed MSIX
         uses: actions/upload-artifact@v4
         with:
