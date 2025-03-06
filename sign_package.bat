@@ -20,7 +20,12 @@ if "%PKGRSN_EXE%"=="" (
     exit /b 1
 )
 
-:: Ensure output directory exists
+:: Ensure output directory exists and is different from input package location
+if "%OUTPUT_DIR%"=="%MSIX_FILE%" (
+    echo Error: Output folder cannot be the same as the input package.
+    exit /b 1
+)
+
 if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 
 :: Run pkgrsn.exe with appropriate arguments
